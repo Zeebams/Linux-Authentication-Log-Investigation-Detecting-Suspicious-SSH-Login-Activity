@@ -1,0 +1,197 @@
+# Linux Authentication Log Investigation Report
+
+## Detecting Suspicious SSH Login Activity
+
+### 1. Incident Information
+
+| Field                | Details                                                    |
+| -------------------- | ---------------------------------------------------------- |
+| Project              | Linux Authentication Log Investigation                     |
+| Investigation Type   | Authentication Log Analysis                                |
+| System               | Simulated Linux Server                                     |
+| Log Source           | SSH authentication log (`auth.log`)                        |
+| Date of Activity     | October 10 (simulated dataset)                             |
+| Analyst              | Azeezah Bamidele                                           |
+| Preliminary Priority | Medium — training assessment                               |
+| Investigation Status | Initial analysis completed; further investigation required |
+| Dataset Type         | Simulated training data                                    |
+
+### 2. Executive Summary
+
+This investigation examined a simulated Linux SSH authentication log to identify suspicious login activity and assess potential unauthorized access.
+
+The analysis identified nine failed password authentication events, including repeated attempts against multiple accounts from the same source IP address, `192.0.2.44`.
+
+The `j.morgan` account recorded four consecutive failed password attempts from this address, followed by a successful password login at 09:12:45. The successful login occurred seven seconds after the last recorded failure.
+
+A later successful login for the same account was recorded from a different source IP, `192.0.2.10`, at 10:02:10.
+
+These events warrant further investigation for possible password-guessing activity or unauthorized account access. However, the available authentication logs do not establish that an attacker gained access, that credentials were compromised, or that malicious actions occurred after login.
+
+This report documents the observed evidence, potential risks, limitations, and recommended next steps.
+
+### 3. Investigation Objectives
+
+The objectives of this investigation were to:
+
+* Identify failed and successful SSH authentication events.
+* Determine whether repeated failures targeted multiple user accounts.
+* Identify accounts with suspicious authentication sequences.
+* Establish a timeline of relevant events.
+* Assess potential security implications without treating suspicion as proof.
+* Recommend additional evidence sources for further investigation.
+
+### 4. Data Source and Methodology
+
+The investigation used a manually created, simulated Linux authentication log containing 13 SSH authentication events.
+
+The log entries included timestamps, hostnames, SSH daemon process identifiers, authentication outcomes, usernames, source IP addresses, and connection ports.
+
+The analysis was performed by reviewing the log entries and identifying patterns in authentication failures, successful logins, source IP addresses, and event timing.
+
+The following log message patterns were examined:
+
+* `Failed password` — indicates an unsuccessful password authentication attempt.
+* `Accepted password` — indicates a successful password authentication.
+* `Accepted publickey` — indicates successful public-key authentication.
+
+No live system was accessed, and no real user accounts or production logs were investigated.
+
+### 5. Key Findings
+
+#### Finding 1: Repeated Failed Authentication Attempts
+
+Nine failed password authentication events were identified in the dataset.
+
+The failures were distributed as follows:
+
+| Username         | Failed Attempts | Source IP    |
+| ---------------- | --------------: | ------------ |
+| `root`           |               3 | `192.0.2.44` |
+| `j.morgan`       |               4 | `192.0.2.44` |
+| `service_backup` |               2 | `192.0.2.33` |
+| **Total**        |           **9** | —            |
+
+The repeated attempts against `root` and `j.morgan` from `192.0.2.44` may indicate password-guessing activity or an attempt to access multiple accounts.
+
+However, the log does not establish who initiated the connections or whether the attempts were malicious.
+
+#### Finding 2: Failed Attempts Followed by Successful Authentication
+
+The `j.morgan` account recorded four failed password attempts from `192.0.2.44`, followed by a successful password login from the same address.
+
+The successful login occurred seven seconds after the last recorded failure.
+
+This sequence is suspicious because repeated authentication failures were followed by successful authentication. It may indicate that a valid password was eventually entered or obtained.
+
+The evidence does not prove that the password was guessed by an attacker. Legitimate password-entry errors remain a possible explanation.
+
+#### Finding 3: Successful Login from a Different Source IP
+
+At 10:02:10, the `j.morgan` account recorded another successful password login from `192.0.2.10`.
+
+This source IP differs from the address associated with the earlier failed attempts and successful login.
+
+A change in source IP can result from normal network changes, VPN use, or legitimate access from another location. It may also warrant investigation if the address is unfamiliar or inconsistent with the user's normal activity.
+
+The available logs do not provide IP reputation, geographic information, device identity, or an approved list of expected source addresses. Therefore, the later login cannot be classified as malicious based on the IP change alone.
+
+#### Finding 4: Additional Account Activity
+
+The dataset recorded two failed password attempts against `service_backup` from `192.0.2.33`.
+
+It also recorded successful public-key authentication for `a.owens` from `192.0.2.12` on two occasions.
+
+These events provide additional context for the authentication activity but do not independently establish suspicious or unauthorized behavior.
+
+### 6. Event Timeline
+
+| Time     | Event                       | Source IP    | Account          |
+| -------- | --------------------------- | ------------ | ---------------- |
+| 09:00:12 | Successful public-key login | `192.0.2.12` | `a.owens`        |
+| 09:12:03 | Failed password             | `192.0.2.44` | `root`           |
+| 09:12:08 | Failed password             | `192.0.2.44` | `root`           |
+| 09:12:14 | Failed password             | `192.0.2.44` | `root`           |
+| 09:12:20 | Failed password             | `192.0.2.44` | `j.morgan`       |
+| 09:12:25 | Failed password             | `192.0.2.44` | `j.morgan`       |
+| 09:12:31 | Failed password             | `192.0.2.44` | `j.morgan`       |
+| 09:12:38 | Failed password             | `192.0.2.44` | `j.morgan`       |
+| 09:12:45 | Successful password login   | `192.0.2.44` | `j.morgan`       |
+| 09:30:00 | Successful public-key login | `192.0.2.12` | `a.owens`        |
+| 09:45:17 | Failed password             | `192.0.2.33` | `service_backup` |
+| 09:45:22 | Failed password             | `192.0.2.33` | `service_backup` |
+| 10:02:10 | Successful password login   | `192.0.2.10` | `j.morgan`       |
+
+### 7. Risk Assessment
+
+**Preliminary priority: Medium for this training exercise.**
+
+The priority reflects the need to investigate the authentication pattern, not a confirmed compromise.
+
+Potential risks include:
+
+* Unauthorized access if the successful login followed malicious password guessing.
+* Exposure of files or sensitive information if the account was compromised.
+* Privilege escalation or unauthorized account creation if an intruder obtained sufficient permissions.
+* Further access to other systems if credentials were reused.
+
+These are potential consequences, not observed outcomes in the supplied dataset.
+
+### 8. Evidence Gaps and Limitations
+
+The investigation is limited to simulated authentication logs.
+
+The available evidence does not establish:
+
+* Whether the successful login was legitimate or unauthorized.
+* Whether the source IP addresses belonged to the same person or device.
+* Whether any files were accessed, modified, or transferred.
+* Whether commands were executed after login.
+* Whether new user accounts were created.
+* Whether privileges were modified or elevated.
+* Whether credentials were stolen or reused.
+* Whether any other systems were accessed.
+
+The addresses in the `192.0.2.x` range are reserved for documentation and example use. They must not be treated as real attacker addresses.
+
+### 9. Recommended Next Steps
+
+1. **Review subsequent activity:** Examine Linux audit records, process execution telemetry, and other available evidence to determine what occurred after the successful login.
+
+2. **Verify account activity:** Confirm whether the `j.morgan` logins were expected by checking with the authorized account owner or reviewing approved access records.
+
+3. **Investigate account changes:** Review account-management and audit records for new users, changes to group membership, and privilege modifications.
+
+4. **Review file access:** Examine available file auditing and endpoint monitoring data for unusual access, modifications, or transfers involving sensitive files.
+
+5. **Assess source addresses:** Compare the observed addresses against approved access records and known user activity. Do not assume that different addresses automatically indicate malicious behavior.
+
+6. **Check for related activity:** Correlate authentication events with system logs, network telemetry, and other relevant security records.
+
+7. **Apply containment only when justified:** If additional evidence supports unauthorized access, follow the organization's incident response process. Depending on the findings, this may include terminating active sessions, disabling or securing the affected account, and rotating credentials.
+
+### 10. Conclusion
+
+The analysis identified repeated SSH password failures against multiple accounts and a successful password login for `j.morgan` shortly after four consecutive failures from the same source address.
+
+The sequence is consistent with a possible password-guessing attempt and warrants further investigation. A subsequent login from a different source IP adds context but does not independently establish malicious activity.
+
+Because the investigation used simulated authentication logs only, no real compromise or post-login malicious behavior can be confirmed.
+
+The next stage would be to correlate the authentication timeline with account-management records, process execution evidence, and other system telemetry to determine whether the observed activity was legitimate or unauthorized.
+
+### 11. Skills Demonstrated
+
+* Linux authentication log analysis
+* SSH login investigation
+* Identification of repeated authentication failures
+* Event timeline reconstruction
+* Source IP correlation
+* Preliminary security risk assessment
+* Evidence-based incident reporting
+* Recognition of investigation limitations
+* Recommendation of follow-up investigative steps
+
+### Disclaimer
+
+This project is an educational cybersecurity exercise using simulated logs. It does not describe a verified real-world security incident. All findings are limited to the supplied training data.
